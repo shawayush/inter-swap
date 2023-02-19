@@ -9,9 +9,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
+	"github.com/shawayush/inter-swap/interchain-swap/types"
 	"github.com/shawayush/inter-swap/x/interchain-swap/sample"
 	marssimulation "github.com/shawayush/inter-swap/x/interchain-swap/simulation"
-	"github.com/shawayush/quasar-task/x/interchain-swap/types"
 )
 
 // avoid unused import issue
