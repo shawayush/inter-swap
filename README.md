@@ -1,216 +1,144 @@
-[![CircleCI](https://circleci.com/gh/circleci/circleci-docs.svg?style=shield)](https://circleci.com/gh/Konstellation/konstellation)
 
-Konstellation is the blockchain built using the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk). Konstellation will be interact with other sovereign blockchains using a protocol called [IBC](https://github.com/cosmos/ics/tree/master/ibc) that enables Inter-Blockchain Communication.
+An Implimentation of 
+1. ICQ for querying swap in OSMOSIS DEX pool
+2. ICA for swapping ICA in OSMOSIS DEX
 
-# Konstellation network
+## Setup
+1. Install golang 1.19 +
+2. Install hermes
+3. git clone this repository
+4. git clone osmosis (preferable v14)
 
-## Mainnet Full Node Quick Start
-With each version of the Konstellation Hub, the chain is restarted from a new Genesis state. We are currently on darchub.
+We need to create a local osmosis chain for dex and IBC some token through these repository, so that we can create a succesful DEX
 
-Get mainnet config [here](https://github.com/Konstellation/konstellation/tree/master/config)
-
+### Starting osmosis
 ```
-- Hardware requirements 
-CPU: 4 core
-RAM: 32 GB 
-DISK Storage: SSD 500 GB
-```
-
-### Build from code
-
-This assumes that you're running Linux or MacOS and have installed [Go 1.17+](https://golang.org/dl/).  This guide helps you:
-
-Build, Install, and Name your Node
-
-Current first you must sync from v4.3.0
-```bash
-# Clone Konstellation from the latest release found here: https://github.com/konstellation/konstellation/releases
-git clone -b v0.4.3 https://github.com/konstellation/konstellation
-# Enter the folder Konstellation was cloned into
-cd konstellation
-# Compile and install Konstellation
-make build
-# Check konstellation version
-build/knstld version
+1. make build
+2. cd build
+3. ./osmosisd keys add my_validator --keyring-backend test    //save the address and mnemonic
+4. MY_VALIDATOR_ADDRESS=$(./osmosisd keys show my_validator -a --keyring-backend test)
+5. ./osmosisd init shaw1 --chain-id my-test-chain1
+6. ./osmosisd add-genesis-account $MY_VALIDATOR_ADDRESS 100000000000stake
+7. ./osmosisd gentx my_validator 100000000stake --chain-id my-test-chain1 --keyring-backend test
+8. ./osmosisd collect-gentxs
+9. change all the usomo to stake in $HOME/.osmosisd/config/genesis.json also low down stakes for modules such as GAMM
+10. change turn on swagger and API in app.toml
+11. set chain-id = "my-test-chain1" and keyring-backend = "test" in client.toml at .osmosisd/config
+12. ./osmosisd start
 ```
 
-### To join mainnet follow this steps
-
-#### Initialize data and folders
-```bash
-build/knstld unsafe-reset-all
+### Starting knstld (in different terminal)
+```
+1. make build
+2. cd build
+3. ./knstld keys add my_validator --keyring-backend test
+4. MY_VALIDATOR_ADDRESS=$(./knstld keys show my_validator -a --keyring-backend test)
+5. ./knstld init shaw2 --chain-id my-test-chain2
+6. ./knstld add-genesis-account $MY_VALIDATOR_ADDRESS 100000000000udarc
+7. ./knstld gentx my_validator 100000000udarc --chain-id my-test-chain2 --keyring-backend test
+8. ./knstld collect-gentxs
+9. change all the stake to uosmo in $HOME/.knstld/config/genesis.json also low down stakes for modules
+10. change turn on swagger and API in app.toml and change ports to 1317-->1318(API), 9090-->9090(gRPC), 9091-->9081(gRPC web)
+11. change ports in config.toml as 26658-->26659(proxy.app), 26657-->26668(RPC server,) 6060-->6061(pprof_laddr), 26656-->2666(laddr)
+12. set chain-id = "my-test-chain2" and keyring-backend = "test" in client.toml at .knstld/config
+13. ./knstld start
 ```
 
-#### Genesis & Seeds
-Download [genesis.json](https://raw.githubusercontent.com/Konstellation/konstellation/master/config/genesis.json)
+Create new wallets in both the chains and send tokens in the respective wallets - 
 ```
-wget -O $HOME/.knstld/config/genesis.json https://raw.githubusercontent.com/Konstellation/konstellation/master/config/genesis.json
-```
-Download [config.toml](https://raw.githubusercontent.com/Konstellation/konstellation/master/config/config.toml) with predefined seeds and persistent peers
-```
-wget -O $HOME/.knstld/config/config.toml https://raw.githubusercontent.com/Konstellation/konstellation/master/config/config.toml
+./knstld keys add <wallet name>
+knstld tx bank send [from_key_or_address] [to_address] [amount]
 ```
 
-Alternatively enter persistent peers to config.toml provided [here](https://github.com/Konstellation/konstellation/tree/master/config)
-
-1) Open ~/.knstld/config/config.toml with text editor. Alternatively you can use cli editor, like nano ``` nano ~/.knstld/config/config.toml ```
-2) Scroll down to persistant peers in `config.toml`, and add the persistant peers as a comma-separated list
-
-#### Setting Up a New Node
-You can edit this moniker, in the ~/.knstld/config/config.toml file:
-```bash
-# A custom human readable name for this node
-moniker = "<your_custom_moniker>"
+### Setup hermes for relaying
+1. setup kets
 ```
-
-You can edit the ~/.knstld/config/app.toml file in order to enable the anti spam mechanism and reject incoming transactions with less than the minimum gas prices:
+echo word1 ... word12or24 > mnemonic_file_hub_osmo
+hermes keys add --key-name keyosmo --chain my-test-chain2--mnemonic-file mnemonic_file_hub_osmo.json
+echo word1 ... word12or24 > mnemonic_file_hub_darc
+hermes keys add --key-name keydarc --chain my-test-chain1--mnemonic-file mnemonic_file_hub_darc.json
 ```
-# This is a TOML config file.
-# For more information, see https://github.com/toml-lang/toml
-##### main base config options #####
-# The minimum gas prices a validator is willing to accept for processing a
-# transaction. A transaction's fees must meet the minimum of any denomination
-# specified in this config (e.g. 10udarc).
-minimum-gas-prices = ""
+2. configure hermers in $HOME/.hermes/config.toml (you can copy and paste if you ahve followed the above configuration)
 ```
-Your full node has been initialized!
+[global]
+log_level = 'info'
 
-#### Run a full node
+[mode]
+
+[mode.clients]
+enabled = true
+refresh = true
+misbehaviour = true
+
+[mode.connections]
+enabled = true
+
+[mode.channels]
+enabled = true
+
+[mode.packets]
+enabled = true
+clear_interval = 100
+clear_on_start = true
+tx_confirmation = true
+
+[telemetry]
+enabled = true
+host = '127.0.0.1'
+port = 3001
+
+[[chains]]
+id = 'my-test-chain2'
+rpc_addr = 'http://localhost:26668'
+grpc_addr = 'http://localhost:9080'
+websocket_addr = 'ws://localhost:26668/websocket'
+rpc_timeout = '15s'
+account_prefix = 'darc'
+key_name = 'keydarc'
+store_prefix = 'ibc'
+gas_price = { price = 0.00, denom = 'udarc' }
+max_gas = 10000000
+clock_drift = '5s'
+trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }
+
+[[chains]]
+id = 'my-test-chain1'
+rpc_addr = 'http://localhost:26657'
+grpc_addr = 'http://localhost:9090'
+websocket_addr = 'ws://localhost:26657/websocket'
+rpc_timeout = '15s'
+account_prefix = 'osmo'
+key_name = 'keyosmosis'
+store_prefix = 'ibc'
+gas_price = { price = 0.00, denom = 'stake' }
+max_gas = 10000000
+clock_drift = '5s'
+trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }
 ```
-# Start Konstellation
-build/knstld start
-# to run process in background run
-screen -dmSL knstld build/knstld start
-# Check your node's status with konstellation cli
-build/knstld status
+3. run 'hermes health-check' to check to check things are configure well
+4. 'hermes start' to start running hermes
+5. need to set up port and channel-  (You can check hermes documentation of you have an doubts)
 ```
-
-Wait for the konstellation block synchroniztion complete
-
-### Block 1826999
-At block 1826999 chain will halt, this is the upgrade requirement block.
-You will get an error
-```shell
-INF committed state app_hash=76B4066182CB3D3E984E09CB5226FD9734F0DFB91EA25AC4CFAC326D26E8D346 height=1826999 module=state num_txs=0
-ERR UPGRADE "v0.44" NEEDED at height: 1827000:
-INF indexed block height=1826999 module=txindex
-UPGRADE "v0.44" NEEDED at height: 1827000:
+ hermes create connection --a-chain my-test-chain2 --b-chain my-test-chain1
+ hermes create channel --order unordered --a-chain my-test-chain2 --a-connection connection-0 --a-port  transfer --b-port transfer
 ```
-This indicates the next steps are ready and you must upgrade the chain.
-
-#### Change git release branch `v0.5.0`
-`git checkout v0.5.0`
-
-#### Compile and install Konstellation
-`make build`
-
-#### Check konstellation version
-`build/knstld version`
-Should return 0.5.0
-
-#### Start Konstellation
-`build/knstld start`
-
-#### Again to run process in background run
-`screen -dmSL knstld build/knstld start`
-
-### Create a key
-Add new
-``` bash
-build/knstld keys add <key_name>
+6. now chaines are ready to trasnfer IBC
+7. transfer tokens to osmosis running chain
 ```
-
-Or import via mnemonic
-```bash
-build/knstld keys add <key_name> -i
+./knstld tx ibc-transfer transfer transfer channel-0 osmo1s3rnvyqaxm8u5e33z5vj3v7ehc6qhgkkr6ktnd 1000darc --from shaw2 -fees 2udarc
 ```
-
-As a result, you got
-```bash
-- name: <key_name>
-  type: local
-  address: <key_address>
-  pubkey: <key_pubkey>
-  mnemonic: ""
-  threshold: 0
-  pubkeys: []
-**Important** write this mnemonic phrase in a safe place.
-It is the only way to recover your account if you ever forget your password.
-<key_mnemonic>
+### Setup GAMM
+./osmosisd tx gamm create-pool --pool-file data.json --from shaw1 --chain-id my-test-chain1
+data.json as -
 ```
+{
+ "weights": "5ibc/99BA144DEE4A6BA7DF7497ABA9AC7A69F8B1451E98199870B1E738751A59C798,5stake",
+ "initial-deposit": "4ibc/99BA144DEE4A6BA7DF7497ABA9AC7A69F8B1451E98199870B1E738751A59C798,5stake",
+ "swap-fee": "0.002",
+ "exit-fee": "0",
+ "future-governor": ""
+}
 
-### To become a validator follow this steps
-Before setting up your validator node, make sure you've already gone through the [Full Node Setup](https://github.com/Konstellation/konstellation#to-join-mainnet-follow-this-steps)
-
-#### What is a Validator?
-[Validators](https://docs.cosmos.network/v0.44/modules/staking/01_state.html#validator) are responsible for committing new blocks to the blockchain through voting. A validator's stake is slashed if they become unavailable or sign blocks at the same height.
-Please read about [Sentry Node Architecture](https://hub.cosmos.network/main/validators/security.html#sentry-nodes-ddos-protection) to protect your node from DDOS attacks and to ensure high-availability.
-
-#### Create Your Validator
-
-Your `darcvalconspub` can be used to create a new validator by staking tokens. You can find your validator pubkey by running:
-
-```bash
-build/knstld tendermint show-validator
 ```
-
-To create your validator, just use the following command:
-
-Check if your key(address) has enough balance:
-
-```bash
-build/knstld query bank balances <key address>
-```
-
-For test nodes, `chain-id` is `darchub`.\
-You need transction fee `2udarc` to make your transaction for creating validator.\
-Don't use more `udarc` than you have! 
-
-```bash
-build/knstld tx staking create-validator \
-  --amount=1000000udarc \
-  --pubkey=$(build/knstld tendermint show-validator) \
-  --moniker=<choose a moniker> \
-  --chain-id=<chain_id> \
-  --commission-rate="0.10" \
-  --commission-max-rate="0.20" \
-  --commission-max-change-rate="0.01" \
-  --min-self-delegation="1" \
-  --from=<key_name> \
-  --fees=2udarc
-```
-
-* NOTE: If you have troubles with \'\\\' symbol, run the command in a single line like `build/knstld tx staking create-validator --amount=1000000udarc --pubkey=$(build/knstld tendermint show-validator) ...`
-
-When specifying commission parameters, the `commission-max-change-rate` is used to measure % _point_ change over the `commission-rate`. E.g. 1% to 2% is a 100% rate increase, but only 1 percentage point.
-
-`Min-self-delegation` is a strictly positive integer that represents the minimum amount of self-delegated voting power your validator must always have. A `min-self-delegation` of 1 means your validator will never have a self-delegation lower than `1000000udarc`
-
-You can check that you are in the validator set by using a third party explorer or using cli tool
-```bash
-build/knstld query staking validators --chain-id=<chain_id>
-```
-
-* Note: You can edit the params after, by running command `build/knstld tx staking edit-validator ... —from <key_name> --chain-id=<chain_id> --fees=2udarc` with the necessary options
-
-## How to init chain
-
-Add key to your keyring
-```build/knstld keys add <key name>```
-
-Initialize genesis and config files.
-```build/knstld init <moniker> --chain-id <chain id>```
-
-Replace all denoms `stake` to `udarc` in `genesis.json`
-
-Add genesis account
-```build/knstld add-genesis-account <key name> 200000000000udarc``` - 200000darc
-
-Create genesis transaction
-```build/knstld gentx <key name> 100000000000udarc --chain-id <chain id>``` - create CreateValidator transaction
-
-Collect all of gentxs
-```build/knstld collect-gentxs```
-
-Run network
-```build/knstld start```
