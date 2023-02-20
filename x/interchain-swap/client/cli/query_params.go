@@ -3,9 +3,10 @@ package cli
 import (
 	"context"
 
+	"github.com/shawayush/inter-swap/x/interchain-swap/types"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/shawayush/inter-swap/x/interchain-swap/types"
 	"github.com/spf13/cobra"
 )
 

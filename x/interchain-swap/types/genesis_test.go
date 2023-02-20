@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/shawayush/inter-swap/x/interchain-swap/types"
+
 	"github.com/stretchr/testify/require"
 )
 

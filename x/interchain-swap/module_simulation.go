@@ -1,7 +1,11 @@
-package mars
+package interchain
 
 import (
 	"math/rand"
+
+	"inter-swap/x/interchain-swap/types"
+
+	marssimulation "inter-swap/x/interchain-swap/simulation"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
@@ -9,9 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
-	"github.com/shawayush/inter-swap/interchain-swap/types"
-	"github.com/shawayush/inter-swap/x/interchain-swap/sample"
-	marssimulation "github.com/shawayush/inter-swap/x/interchain-swap/simulation"
+	"github.com/tendermint/spm/testutil/sample"
 )
 
 // avoid unused import issue
