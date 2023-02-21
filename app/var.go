@@ -26,9 +26,11 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
+	"github.com/cosmos/ibc-go/v3/modules/apps/icq"
 	transfer "github.com/cosmos/ibc-go/v3/modules/apps/transfer"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v3/modules/core"
+	interquerymodule "github.com/shawayush/inter-swap/x/interchain-swap"
 	"github.com/tendermint/spm/cosmoscmd"
 )
 
@@ -80,6 +82,8 @@ var (
 		feegrantmodule.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 		wasm.AppModuleBasic{},
+		interquerymodule.AppModuleBasic{},
+		icq.AppModuleBasic{},
 	)
 
 	// module account permissions
