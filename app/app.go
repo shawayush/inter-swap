@@ -73,6 +73,9 @@ import (
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	"github.com/cosmos/ibc-go/v3/modules/apps/icq"
+	icqkeeper "github.com/cosmos/ibc-go/v3/modules/apps/icq/keeper"
+	icqtypes "github.com/cosmos/ibc-go/v3/modules/apps/icq/types"
 	transfer "github.com/cosmos/ibc-go/v3/modules/apps/transfer"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v3/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
@@ -107,6 +110,10 @@ import (
 	icahostkeeper "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/host/keeper"
 	icahosttypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
+
+	interquerymodule "github.com/shawayush/inter-swap/x/interchain-swap"
+	interquerymodulekeeper "github.com/shawayush/inter-swap/x/interchain-swap/keeper"
+	interquerymoduletypes "github.com/shawayush/inter-swap/x/interchain-swap/types"
 )
 
 func init() {
@@ -289,6 +296,7 @@ func New(
 		feegrant.StoreKey,
 		icahosttypes.StoreKey,
 		wasm.StoreKey,
+		interquerymoduletypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -317,6 +325,7 @@ func New(
 
 	ScopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	ScopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
+	scopedICQKeeper := app.CapabilityKeeper.ScopeToModule(icqtypes.ModuleName)
 	ScopedICAHostKeeper := app.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
 	ScopedWasmKeeper := app.CapabilityKeeper.ScopeToModule(wasm.ModuleName)
 
@@ -392,6 +401,14 @@ func New(
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
 	transferIBCModule := transfer.NewIBCModule(app.TransferKeeper)
 
+	app.ICQKeeper = icqkeeper.NewKeeper(
+		appCodec, keys[icqtypes.StoreKey], app.GetSubspace(icqtypes.ModuleName),
+		app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
+		scopedICQKeeper, app.BaseApp,
+	)
+	icqModule := icq.NewAppModule(app.ICQKeeper)
+	icqIBCModule := icq.NewIBCModule(app.ICQKeeper)
+
 	app.ICAHostKeeper = icahostkeeper.NewKeeper(
 		appCodec,
 		keys[icahosttypes.StoreKey],
@@ -448,12 +465,26 @@ func New(
 	if len(enabledProposals) != 0 {
 		govRouter.AddRoute(wasm.RouterKey, wasm.NewWasmProposalHandler(app.wasmKeeper, enabledProposals))
 	}
+	scopedInterqueryKeeper := app.CapabilityKeeper.ScopeToModule(interquerymoduletypes.ModuleName)
+	app.ScopedInterqueryKeeper = scopedInterqueryKeeper
+	app.InterqueryKeeper = *interquerymodulekeeper.NewKeeper(
+		appCodec,
+		keys[interquerymoduletypes.StoreKey],
+		keys[interquerymoduletypes.MemStoreKey],
+		app.GetSubspace(interquerymoduletypes.ModuleName),
+		app.IBCKeeper.ChannelKeeper,
+		app.IBCKeeper.ChannelKeeper,
+		&app.IBCKeeper.PortKeeper,
+		scopedInterqueryKeeper,
+	)
+	interqueryModule := interquerymodule.NewAppModule(appCodec, app.InterqueryKeeper, app.AccountKeeper, app.BankKeeper)
 
 	// Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
 	ibcRouter.
 		AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
 		AddRoute(ibctransfertypes.ModuleName, transferIBCModule).
+		AddRoute(interquerymoduletypes.ModuleName, icqIBCModule).
 		AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.wasmKeeper, app.IBCKeeper.ChannelKeeper))
 	app.IBCKeeper.SetRouter(ibcRouter)
 
@@ -494,6 +525,8 @@ func New(
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		transferModule,
 		icaModule,
+		icqModule,
+		interqueryModule,
 		wasm.NewAppModule(appCodec, &app.wasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 	)
 
@@ -522,6 +555,8 @@ func New(
 		ibctransfertypes.ModuleName,
 		icatypes.ModuleName,
 		wasm.ModuleName,
+		icqtypes.ModuleName,
+		interquerymoduletypes.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(
 		upgradetypes.ModuleName,
@@ -544,6 +579,8 @@ func New(
 		ibctransfertypes.ModuleName,
 		icatypes.ModuleName,
 		wasm.ModuleName,
+		icqtypes.ModuleName,
+		interquerymoduletypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -573,6 +610,7 @@ func New(
 		icatypes.ModuleName,
 		//oracletypes.ModuleName,
 		wasm.ModuleName,
+		interquerymoduletypes.ModuleName,
 	)
 
 	module.BasicManager.RegisterInterfaces(app.basicManager, app.interfaceRegistry)
@@ -852,6 +890,8 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	//paramsKeeper.Subspace(oracletypes.ModuleName)
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
 	paramsKeeper.Subspace(wasm.ModuleName)
+	paramsKeeper.Subspace(interquerymoduletypes.ModuleName)
+	paramsKeeper.Subspace(icqtypes.ModuleName)
 
 	return paramsKeeper
 }

@@ -11,7 +11,6 @@ import (
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/shawayush/inter-swap/x/interchain-swap/types"
-	icqtypes "github.com/shawayush/inter-swap/x/interchain-swap/types"
 )
 
 // OnChanOpenInit implements the IBCModule interface
@@ -124,7 +123,7 @@ func (am AppModule) OnRecvPacket(
 	modulePacket channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) ibcexported.Acknowledgement {
-	return icqtypes.NewErrorAcknowledgement(sdkerrors.Wrapf(icqtypes.ErrInvalidChannelFlow, "inter-query module can not receive packets"))
+	return nil
 }
 
 // OnAcknowledgementPacket implements the IBCModule interface

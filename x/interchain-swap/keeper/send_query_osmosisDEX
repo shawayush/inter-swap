@@ -17,7 +17,7 @@ import (
 	gammtypes "github.com/osmosis-labs/osmosis/v14/x/gamm/v2types"
 )
 
-func (k msgServer) SendQueryOsmosisDEX(goCtx context.Context, msg *types.MsgSendQueryAllBalances) (*types.MsgSendQueryAllBalancesResponse, error) {
+func (k msgServer) SendQueryOsmosisDEX(goCtx context.Context, msg *types.QuerySpotPriceStruct) (*types.QuerySpotPriceStructResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	chanCap, found := k.scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(k.GetPort(ctx), msg.ChannelId))
@@ -26,13 +26,13 @@ func (k msgServer) SendQueryOsmosisDEX(goCtx context.Context, msg *types.MsgSend
 	}
 
 	q := gammtypes.QuerySpotPriceRequest{
-		PoolId:    msg.Address,
-		BaseAssetDenom: msg.Pagination,
-		QuoteAssetDenom: 
+		PoolId:          msg.PoolID,
+		BaseAssetDenom:  msg.BaseAssetDenom,
+		QuoteAssetDenom: msg.QuoteAssetDenom,
 	}
 	reqs := []abcitypes.RequestQuery{
 		{
-			Path: "/cosmos.bank.v1beta1.Query/AllBalances",
+			Path: "/osmosis.gamm.v2.Query/pools",
 			Data: k.cdc.MustMarshal(&q),
 		},
 	}

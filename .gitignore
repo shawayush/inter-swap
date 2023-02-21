@@ -17,3 +17,7 @@ config/keys.json
 # IDE
 .idea/
 *.iml
+proto/interswap-chain/genesis.proto
+proto/interswap-chain/params.proto
+proto/interswap-chain/query.proto
+proto/interswap-chain/tx.proto

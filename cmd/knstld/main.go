@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
@@ -15,7 +16,7 @@ import (
 func main() {
 	params.SetAddressPrefixes()
 	rootCmd, _ := cmd.NewRootCmd()
-
+	fmt.Println("checking")
 	rootCmd.AddCommand(keys.Commands(app.DefaultNodeHome))
 	rootCmd.AddCommand(ibc.MigrateGenesisForIBC())
 

@@ -3,9 +3,9 @@ package interchain
 import (
 	"math/rand"
 
-	"inter-swap/x/interchain-swap/types"
+	"github.com/shawayush/inter-swap/x/interchain-swap/types"
 
-	marssimulation "inter-swap/x/interchain-swap/simulation"
+	marssimulation "github.com/shawayush/inter-swap/x/interchain-swap/simulation"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"

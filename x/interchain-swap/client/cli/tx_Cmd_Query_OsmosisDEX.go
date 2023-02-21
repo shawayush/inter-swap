@@ -23,11 +23,6 @@ func CmdQueryOsmosisDEX() *cobra.Command {
 				return err
 			}
 
-			pageReq, err := client.ReadPageRequest(cmd.Flags())
-			if err != nil {
-				return err
-			}
-
 			msg := types.NewMsgSendQueryAllBalances(
 				clientCtx.GetFromAddress().String(),
 				args[0], // src-channel

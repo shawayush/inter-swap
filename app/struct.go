@@ -23,8 +23,10 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	icahostkeeper "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/host/keeper"
+	icqkeeper "github.com/cosmos/ibc-go/v3/modules/apps/icq/keeper"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v3/modules/apps/transfer/keeper"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
+	interquerymodulekeeper "github.com/shawayush/inter-swap/x/interchain-swap/keeper"
 )
 
 // App extends an ABCI application, but with most of its parameters exported.
@@ -66,6 +68,7 @@ type App struct {
 	TransferKeeper   ibctransferkeeper.Keeper
 	SimulKeeper      smltn.BankKeeper
 	FeeGrantKeeper   feegrantkeeper.Keeper
+	ICQKeeper        icqkeeper.Keeper
 
 	ICAHostKeeper icahostkeeper.Keeper
 	// make scoped keepers public for test purposes
@@ -74,8 +77,10 @@ type App struct {
 	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
 
 	// this line is used by starport scaffolding # stargate/app/keeperDeclaration
-	wasmKeeper       wasm.Keeper
-	scopedWasmKeeper capabilitykeeper.ScopedKeeper
+	wasmKeeper             wasm.Keeper
+	scopedWasmKeeper       capabilitykeeper.ScopedKeeper
+	InterqueryKeeper       interquerymodulekeeper.Keeper
+	ScopedInterqueryKeeper capabilitykeeper.ScopedKeeper
 
 	// the module manager
 	mm *module.Manager
