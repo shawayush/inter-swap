@@ -51,7 +51,7 @@ knstld tx bank send [from_key_or_address] [to_address] [amount]
 ```
 
 ### Setup hermes for relaying
-1. setup kets
+1. setup keys
 ```
 echo word1 ... word12or24 > mnemonic_file_hub_osmo
 hermes keys add --key-name keyosmo --chain my-test-chain2--mnemonic-file mnemonic_file_hub_osmo.json
@@ -131,6 +131,7 @@ trust_threshold = { numerator = '1', denominator = '3' }
 ```
 ### Setup GAMM
 ./osmosisd tx gamm create-pool --pool-file data.json --from shaw1 --chain-id my-test-chain1
+
 data.json as -
 ```
 {
